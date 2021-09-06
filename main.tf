@@ -12,7 +12,7 @@ resource "aws_vpc" "test_vpc" {
 }
 resource "aws_subnet" "test_pub_subnet" {
   vpc_id                  = aws_vpc.test_vpc.id
-  cidr_block              = "10.10.1.0/24"
+  cidr_block              = "10.0.1.0/24"
   map_public_ip_on_launch = "true"
   availability_zone       = "us-east-1a"
   tags = {
@@ -28,26 +28,26 @@ resource "aws_internet_gateway" "test_igw" {
 resource "aws_route_table" "test_pub_rt" {
   vpc_id = aws_vpc.test_vpc.id
   route = [{
-    carrier_gateway_id         = false
+    carrier_gateway_id         = ""
     cidr_block                 = "0.0.0.0/0"
-    destination_prefix_list_id = false
-    egress_only_gateway_id     = false
+    destination_prefix_list_id = ""
+    egress_only_gateway_id     = ""
     gateway_id                 = "aws_internet_gateway.test_igw.id"
-    instance_id                = false
-    ipv6_cidr_block            = "::/0"
-    local_gateway_id           = false
-    nat_gateway_id             = false
-    network_interface_id       = false
-    transit_gateway_id         = false
-    vpc_endpoint_id            = false
-    vpc_peering_connection_id  = false
+    instance_id                = ""
+    ipv6_cidr_block            = ""
+    local_gateway_id           = ""
+    nat_gateway_id             = ""
+    network_interface_id       = ""
+    transit_gateway_id         = ""
+    vpc_endpoint_id            = ""
+    vpc_peering_connection_id  = ""
   }]
 }
 resource "aws_route_table_association" "test_pub_rta" {
   subnet_id      = aws_subnet.test_pub_subnet.id
   route_table_id = aws_route_table.test_pub_rt.id
 }
-resource "aws_security_group" "test-sg" {
+resource "aws_security_group" "test_sg" {
   vpc_id = aws_vpc.test_vpc.id
   name   = "test-sg"
 
@@ -61,20 +61,20 @@ resource "aws_security_group" "test-sg" {
       protocol         = "tcp"
       security_groups  = ["aws_security_group.test_sg.id"]
       self             = false
-      prefix_list_ids  = [""]
+      prefix_list_ids  = []
     }
   ]
   egress = [
     {
       cidr_blocks      = ["0.0.0.0/0"]
       description      = "ssh"
-      from_port        = "22"
-      to_port          = "443"
+      from_port        = "0"
+      to_port          = "0"
       ipv6_cidr_blocks = ["::/0"]
       protocol         = "tcp"
       security_groups  = ["aws_security_group.test_sg.id"]
       self             = false
-      prefix_list_ids  = [""]
+      prefix_list_ids  = []
     }
   ]
 
@@ -87,6 +87,7 @@ resource "aws_instance" "ec2test" {
   key_name                    = "test"
   subnet_id                   = aws_subnet.test_pub_subnet.id
   security_groups             = ["aws_security_group.test_sg.id"]
+  vpc_security_group_ids      = ["aws_vpc_security_group."]
   user_data                   = <<-EOF
       #!/bin/bash
       sudo yum-config-manager --disable docker-ce-stable
@@ -106,11 +107,13 @@ resource "aws_instance" "ec2test" {
       EOF
 }
 
-data "terraform_remote_state" "myBackend" {
-   backend = "s3"
-   config {
-       bucket = "terraform-state-prod"
-       key = "network/terraform.tfstate"
-       region = "us-east-1"
-   }
+
+terraform {
+  backend "s3" {
+    bucket = "yaznasivasai"
+    key    = "network/terraform.tfstate"
+    region = "us-east-1"
+  }
 }
+
+
